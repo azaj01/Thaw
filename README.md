@@ -59,7 +59,7 @@ Thaw is currently available in the following languages:
 | **正體中文**               | Complete |  🇹🇼   | ![100%](https://geps.dev/progress/100) |
 | **한국어**                 | Complete |  🇰🇷   | ![100%](https://geps.dev/progress/100) |
 | **ภาษาไทย**                | Complete |  🇹🇭   | ![100%](https://geps.dev/progress/100) |
-| **Türkçe**                 | Complete |  🇹🇷   | ![100%](https://geps.dev/progress/100) |
+| **Türkçe(\*)**             | Complete |  🇹🇷   | ![100%](https://geps.dev/progress/100) |
 
 _Note: languages marked with (\*) are currently only available in the development branch._
 
