@@ -143,6 +143,8 @@ final class MenuBarItemManager: ObservableObject {
     var isResettingLayout = false
     /// Suppresses saving section order during an active order-restore pass.
     private var isRestoringItemOrder = false
+    /// Timestamp when isRestoringItemOrder was set (for timeout detection).
+    private var isRestoringItemOrderTimestamp: Date?
     /// Persisted bundle identifiers explicitly placed in hidden section.
     private var pinnedHiddenBundleIDs = Set<String>()
     /// Persisted bundle identifiers explicitly placed in always-hidden section.
@@ -233,15 +235,42 @@ final class MenuBarItemManager: ObservableObject {
 
     /// Extracts the current per-section item order from the given cache and
     /// persists it. Skips the write when the order has not changed.
+    /// For items currently in the cache, uses their current section.
+    /// For items from apps that are closed (not in cache), preserves their saved section.
     private func saveSectionOrder(from cache: ItemCache) {
         var newOrder = [String: [String]]()
+
+        // Build a set of all identifiers currently in the cache
+        var allCurrentIdentifiers = Set<String>()
         for section in MenuBarSection.Name.allCases {
             let identifiers = cache[section]
                 .filter { !$0.isControlItem }
                 .map(\.uniqueIdentifier)
-            guard !identifiers.isEmpty else { continue }
-            newOrder[sectionKey(for: section)] = identifiers
+            allCurrentIdentifiers.formUnion(identifiers)
         }
+
+        for section in MenuBarSection.Name.allCases {
+            // Start with current identifiers for this section (they belong here now)
+            var identifiers = cache[section]
+                .filter { !$0.isControlItem }
+                .map(\.uniqueIdentifier)
+
+            // Add identifiers from saved sections that are NOT currently in the cache
+            // (i.e., apps that are closed - preserve their saved section)
+            for (sectionKeyString, savedIdentifiers) in savedSectionOrder {
+                guard sectionName(for: sectionKeyString) == section else { continue }
+                for identifier in savedIdentifiers where !allCurrentIdentifiers.contains(identifier) {
+                    if !identifiers.contains(identifier) {
+                        identifiers.append(identifier)
+                    }
+                }
+            }
+
+            if !identifiers.isEmpty {
+                newOrder[sectionKey(for: section)] = identifiers
+            }
+        }
+
         guard newOrder != savedSectionOrder else { return }
         savedSectionOrder = newOrder
         persistSavedSectionOrder()
@@ -292,6 +321,36 @@ final class MenuBarItemManager: ObservableObject {
     private func configureCancellables(with appState: AppState) {
         var c = Set<AnyCancellable>()
 
+        // When any app launches, refresh the cache to detect new menu bar items
+        // (e.g., apps with "unremembered" icons that need restoration) and restore
+        // any items that moved to incorrect sections after their app restarted.
+        NSWorkspace.shared.notificationCenter.publisher(
+            for: NSWorkspace.didLaunchApplicationNotification
+        )
+        .debounce(for: 1, scheduler: DispatchQueue.main)
+        .sink { [weak self] _ in
+            guard let self else { return }
+            MenuBarItemManager.diagLog.debug("App launched, refreshing cache for potential new items")
+            Task {
+                await self.cacheItemsRegardless()
+            }
+        }
+        .store(in: &c)
+
+        // When any app terminates, refresh the cache (items may have disappeared).
+        NSWorkspace.shared.notificationCenter.publisher(
+            for: NSWorkspace.didTerminateApplicationNotification
+        )
+        .debounce(for: 1, scheduler: DispatchQueue.main)
+        .sink { [weak self] _ in
+            guard let self else { return }
+            MenuBarItemManager.diagLog.debug("App terminated, refreshing cache")
+            Task {
+                await self.cacheItemsIfNeeded()
+            }
+        }
+        .store(in: &c)
+
         NSWorkspace.shared.notificationCenter.publisher(
             for: NSWorkspace.didActivateApplicationNotification
         )
@@ -302,20 +361,6 @@ final class MenuBarItemManager: ObservableObject {
             }
             Task {
                 await self.cacheItemsIfNeeded()
-            }
-        }
-        .store(in: &c)
-
-        NSWorkspace.shared.notificationCenter.publisher(
-            for: NSWorkspace.didLaunchApplicationNotification
-        )
-        .debounce(for: 1.0, scheduler: DispatchQueue.main)
-        .sink { [weak self] _ in
-            guard let self else {
-                return
-            }
-            Task {
-                await self.cacheItemsRegardless()
             }
         }
         .store(in: &c)
@@ -704,6 +749,15 @@ extension MenuBarItemManager {
         }
 
         itemCache = context.cache
+
+        // Reset isRestoringItemOrder if it's been stuck for too long (10 seconds).
+        // This prevents stale flags from blocking saves after user manual moves.
+        if isRestoringItemOrder, let timestamp = isRestoringItemOrderTimestamp, Date().timeIntervalSince(timestamp) > 10 {
+            MenuBarItemManager.diagLog.debug("Resetting stale isRestoringItemOrder flag (timeout)")
+            isRestoringItemOrder = false
+            isRestoringItemOrderTimestamp = nil
+        }
+
         if !isRestoringItemOrder, !isResettingLayout {
             saveSectionOrder(from: context.cache)
         }
@@ -839,6 +893,7 @@ extension MenuBarItemManager {
             // Set the flag before calling so that any intermediate cache
             // updates during move() don't overwrite the saved section order.
             isRestoringItemOrder = true
+            isRestoringItemOrderTimestamp = Date()
             let didRestoreSections = await restoreItemsToSavedSections(
                 items,
                 controlItems: controlItems,
@@ -871,6 +926,7 @@ extension MenuBarItemManager {
                 // Keep isRestoringItemOrder true through the recache to prevent
                 // saving intermediate item positions while macOS settles the moves.
                 isRestoringItemOrder = true
+                isRestoringItemOrderTimestamp = Date()
                 MenuBarItemManager.diagLog.debug("Restored saved item order; scheduling recache")
                 let continuation = self.backgroundCacheContinuation
                 self.backgroundCacheContinuation = nil
@@ -2588,8 +2644,26 @@ extension MenuBarItemManager {
         // tag/namespace) and not already placed/pinned in hidden areas.
         let hideableLeftmost = leftmostItems.filter { $0.canBeHidden }
         let previousIDs = Set(previousWindowIDs)
+
+        // Build lookup for saved sections (same logic as restoreItemsToSavedSections).
+        var savedSectionForIdentifier = [String: MenuBarSection.Name]()
+        for (sectionKeyString, identifiers) in savedSectionOrder {
+            guard let section = sectionName(for: sectionKeyString) else { continue }
+            for identifier in identifiers {
+                savedSectionForIdentifier[identifier] = section
+            }
+        }
+
         let candidate = hideableLeftmost.first { item in
             let identifier = "\(item.tag.namespace):\(item.tag.title)"
+
+            // Only treat as "new" if we don't have a saved section for this item.
+            // Items with saved sections should be handled by restoreItemsToSavedSections,
+            // not by the "new item" relocation logic.
+            let hasSavedSection = savedSectionForIdentifier[identifier] != nil ||
+                savedSectionForIdentifier[item.uniqueIdentifier] != nil
+            guard !hasSavedSection else { return false }
+
             let isNewIdentity = !knownItemIdentifiers.contains(identifier)
             let isNewID = previousIDs.isEmpty ? isNewIdentity : !previousIDs.contains(item.windowID)
             let notPlacedHidden = !hiddenTags.contains(item.tag) && !alwaysHiddenTags.contains(item.tag)
@@ -2597,7 +2671,12 @@ extension MenuBarItemManager {
             let notPinnedHidden = bundle.map { !pinnedHiddenBundleIDs.contains($0) && !pinnedAlwaysHiddenBundleIDs.contains($0) } ?? true
             return notPlacedHidden && notPinnedHidden && (isNewID || isNewIdentity)
         }
-        guard let candidate else { return false }
+        guard let candidate else {
+            if !leftmostItems.isEmpty && savedSectionForIdentifier.isEmpty == false {
+                MenuBarItemManager.diagLog.debug("relocateNewLeftmostItems: skipping, items have saved sections (letting restore handle it)")
+            }
+            return false
+        }
 
         // Track this item so we don't move it again unless it truly appears new.
         let identifier = "\(candidate.tag.namespace):\(candidate.tag.title)"
@@ -2752,17 +2831,33 @@ extension MenuBarItemManager {
         guard !suppressNextNewLeftmostItemRelocation else { return false }
         guard !lastMoveOperationOccurred(within: .seconds(2)) else { return false }
 
-        // Only act when previous window IDs have disappeared (app restarted).
-        let currentWindowIDSet = Set(items.lazy.map(\.windowID))
+        // Only restore when previous window IDs have disappeared (app restarted).
+        // This prevents undoing the user's manual section moves on regular cache refreshes.
+        let currentWindowIDSet = Set(items.map(\.windowID))
         let previousWindowIDSet = Set(previousWindowIDs)
-        guard !previousWindowIDSet.isSubset(of: currentWindowIDSet) else { return false }
+        guard !previousWindowIDSet.isEmpty && !previousWindowIDSet.isSubset(of: currentWindowIDSet) else {
+            MenuBarItemManager.diagLog.debug("restoreItemsToSavedSections: no app restart detected (window IDs unchanged), skipping")
+            return false
+        }
 
-        // Don't interfere with temporarily shown items.
-        let activelyShownTags = Set(temporarilyShownItemContexts.map {
-            "\($0.tag.namespace):\($0.tag.title)"
-        })
+        // Get current item tags.
+        let currentTags = Set(items.map { "\($0.tag.namespace):\($0.tag.title)" })
+        let savedTags = Set(savedSectionOrder.values.flatMap { $0 })
+        let savedTagsInCurrent = savedTags.intersection(currentTags)
 
-        // Build a lookup: uniqueIdentifier → saved section name.
+        // Only restore if saved items that were hidden/alwaysHidden are now visible,
+        // or if items moved sections incorrectly after app restart.
+        // Skip if no saved items are currently present (app closed).
+        guard !savedTagsInCurrent.isEmpty else {
+            MenuBarItemManager.diagLog.debug("restoreItemsToSavedSections: no saved items currently present, skipping")
+            return false
+        }
+
+        // Give macOS time to settle after app restart before attempting moves.
+        MenuBarItemManager.diagLog.debug("restoreItemsToSavedSections: waiting for menu bar to settle...")
+        try? await Task.sleep(for: .milliseconds(500))
+
+        // Build lookup for saved sections.
         var savedSectionForItem = [String: MenuBarSection.Name]()
         for (sectionKeyString, identifiers) in savedSectionOrder {
             guard let section = sectionName(for: sectionKeyString) else { continue }
@@ -2777,17 +2872,31 @@ extension MenuBarItemManager {
             displayID: Bridging.getActiveMenuBarDisplayID()
         )
 
+        // Don't interfere with temporarily shown items.
+        let activelyShownTags = Set(temporarilyShownItemContexts.map {
+            "\($0.tag.namespace):\($0.tag.title)"
+        })
+
         for item in items where !item.isControlItem && item.isMovable && item.canBeHidden {
             let tagString = "\(item.tag.namespace):\(item.tag.title)"
             guard !activelyShownTags.contains(tagString) else { continue }
 
             guard let currentSection = context.findSection(for: item) else { continue }
-            guard let savedSection = savedSectionForItem[item.uniqueIdentifier] else { continue }
-            guard currentSection != savedSection else { continue }
+
+            // Check both full uniqueIdentifier and base identifier (without instanceIndex)
+            // since instanceIndex may change after app restart.
+            let baseIdentifier = "\(item.tag.namespace):\(item.tag.title)"
+            let savedSection = savedSectionForItem[item.uniqueIdentifier] ?? savedSectionForItem[baseIdentifier]
+            guard let targetSection = savedSection else {
+                MenuBarItemManager.diagLog.debug("restoreItemsToSavedSections: \(item.uniqueIdentifier) (base: \(baseIdentifier)) not in saved sections, skipping")
+                continue
+            }
+            MenuBarItemManager.diagLog.debug("restoreItemsToSavedSections: checking \(item.uniqueIdentifier) - currentSection=\(currentSection.logString), targetSection=\(targetSection.logString)")
+            guard currentSection != targetSection else { continue }
 
             // Item is in the wrong section — move it.
             let destination: MoveDestination
-            switch savedSection {
+            switch targetSection {
             case .visible:
                 destination = .rightOfItem(controlItems.hidden)
             case .hidden:
@@ -2805,16 +2914,22 @@ extension MenuBarItemManager {
             }
 
             MenuBarItemManager.diagLog.info(
-                "Restoring \(item.logString) from \(currentSection.logString) to \(savedSection.logString)"
+                "Restoring \(item.logString) from \(currentSection.logString) to \(targetSection.logString)"
             )
 
             do {
+                MenuBarItemManager.diagLog.debug("Starting move for restore: item=\(item.logString), destination=\(destination.logString)")
                 try await move(item: item, to: destination, skipInputPause: true)
+                MenuBarItemManager.diagLog.debug("Move completed successfully for restore")
+            } catch let error as EventError {
+                MenuBarItemManager.diagLog.error(
+                    "Failed to restore \(item.logString) to \(targetSection.logString): \(error.errorDescription ?? error.description)"
+                )
+                continue
             } catch {
                 MenuBarItemManager.diagLog.error(
-                    "Failed to restore \(item.logString) to \(savedSection.logString): \(error)"
+                    "Failed to restore \(item.logString) to \(targetSection.logString): \(error)"
                 )
-                // Skip this item and try the next misplaced one.
                 continue
             }
 
@@ -2824,6 +2939,7 @@ extension MenuBarItemManager {
             return true
         }
 
+        MenuBarItemManager.diagLog.debug("restoreItemsToSavedSections: no items needed restoring (checked \(items.count) items)")
         return false
     }
 
