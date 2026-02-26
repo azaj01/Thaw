@@ -426,6 +426,11 @@ extension MenuBarItemManager {
         /// of the previous cache.
         private(set) var cachedItemWindowIDs = [CGWindowID]()
 
+        /// A list of the menu bar item tags (namespace:title) at the time
+        /// of the previous cache. Used to detect actual app restarts
+        /// instead of relying on window IDs which can be reassigned.
+        private(set) var cachedItemTags = [String]()
+
         /// Runs the given async closure as a task and waits for it to
         /// complete before returning.
         ///
@@ -443,9 +448,15 @@ extension MenuBarItemManager {
             cachedItemWindowIDs = itemWindowIDs
         }
 
+        /// Updates the list of cached menu bar item tags.
+        func updateCachedItemTags(_ itemTags: [String]) {
+            cachedItemTags = itemTags
+        }
+
         /// Clears the list of cached menu bar item window identifiers.
         func clearCachedItemWindowIDs() {
             cachedItemWindowIDs.removeAll()
+            cachedItemTags.removeAll()
         }
     }
 
@@ -797,6 +808,7 @@ extension MenuBarItemManager {
             }
 
             let previousWindowIDs = await cacheActor.cachedItemWindowIDs
+            let previousItemTags = await cacheActor.cachedItemTags
             let displayID = Bridging.getActiveMenuBarDisplayID()
             MenuBarItemManager.diagLog.debug("cacheItemsRegardless: displayID=\(displayID.map { "\($0)" } ?? "nil"), previousWindowIDs count=\(previousWindowIDs.count)")
 
@@ -818,6 +830,9 @@ extension MenuBarItemManager {
 
             let itemWindowIDs = currentItemWindowIDs ?? items.reversed().map { $0.windowID }
             await cacheActor.updateCachedItemWindowIDs(itemWindowIDs)
+
+            let itemTags = items.map { "\($0.tag.namespace):\($0.tag.title)" }
+            await cacheActor.updateCachedItemTags(itemTags)
 
             await MainActor.run {
                 MenuBarItemTag.Namespace.pruneUUIDCache(keeping: Set(itemWindowIDs))
@@ -897,7 +912,8 @@ extension MenuBarItemManager {
             let didRestoreSections = await restoreItemsToSavedSections(
                 items,
                 controlItems: controlItems,
-                previousWindowIDs: previousWindowIDs
+                previousWindowIDs: previousWindowIDs,
+                previousItemTags: previousItemTags
             )
             if didRestoreSections {
                 MenuBarItemManager.diagLog.debug("Restored item to saved section; scheduling recache")
@@ -919,7 +935,8 @@ extension MenuBarItemManager {
             let didRestoreOrder = await restoreSavedItemOrder(
                 items,
                 controlItems: controlItems,
-                previousWindowIDs: previousWindowIDs
+                previousWindowIDs: previousWindowIDs,
+                previousItemTags: previousItemTags
             )
 
             if didRestoreOrder {
@@ -2825,23 +2842,26 @@ extension MenuBarItemManager {
     private func restoreItemsToSavedSections(
         _ items: [MenuBarItem],
         controlItems: ControlItemPair,
-        previousWindowIDs: [CGWindowID]
+        previousWindowIDs _: [CGWindowID],
+        previousItemTags: [String]
     ) async -> Bool {
         guard !savedSectionOrder.isEmpty else { return false }
         guard !suppressNextNewLeftmostItemRelocation else { return false }
         guard !lastMoveOperationOccurred(within: .seconds(2)) else { return false }
 
-        // Only restore when previous window IDs have disappeared (app restarted).
-        // This prevents undoing the user's manual section moves on regular cache refreshes.
-        let currentWindowIDSet = Set(items.map(\.windowID))
-        let previousWindowIDSet = Set(previousWindowIDs)
-        guard !previousWindowIDSet.isEmpty && !previousWindowIDSet.isSubset(of: currentWindowIDSet) else {
-            MenuBarItemManager.diagLog.debug("restoreItemsToSavedSections: no app restart detected (window IDs unchanged), skipping")
+        // Use item tags (namespace:title) instead of window IDs to detect app restarts.
+        // Window IDs can be reassigned by the WindowServer even when apps are still running,
+        // which would incorrectly trigger restore and cause items to move randomly.
+        let currentTags = Set(items.map { "\($0.tag.namespace):\($0.tag.title)" })
+        let previousTagsSet = Set(previousItemTags)
+
+        // Only restore when previous item tags have disappeared (actual app restart).
+        // If same items are present (even with different window IDs), skip restore.
+        guard !previousTagsSet.isEmpty && !previousTagsSet.isSubset(of: currentTags) else {
+            MenuBarItemManager.diagLog.debug("restoreItemsToSavedSections: no app restart detected (same items present), skipping")
             return false
         }
 
-        // Get current item tags.
-        let currentTags = Set(items.map { "\($0.tag.namespace):\($0.tag.title)" })
         let savedTags = Set(savedSectionOrder.values.flatMap { $0 })
         let savedTagsInCurrent = savedTags.intersection(currentTags)
 
@@ -2981,7 +3001,8 @@ extension MenuBarItemManager {
     private func restoreSavedItemOrder(
         _ items: [MenuBarItem],
         controlItems: ControlItemPair,
-        previousWindowIDs: [CGWindowID]
+        previousWindowIDs _: [CGWindowID],
+        previousItemTags: [String]
     ) async -> Bool {
         guard !savedSectionOrder.isEmpty else { return false }
 
@@ -2997,16 +3018,15 @@ extension MenuBarItemManager {
         // will have no recent move timestamp.
         guard !lastMoveOperationOccurred(within: .seconds(2)) else { return false }
 
-        // Only restore when previous window IDs have disappeared, indicating
-        // an app restarted (old windows destroyed, new ones created). During
-        // move operations macOS can briefly report duplicate windows for the
-        // same item, which adds transient IDs to the current set. Checking
-        // for removed IDs (rather than any set difference) avoids false
-        // positives from these duplicates and from user drag-and-drop, which
-        // only repositions existing windows without removing any.
-        let currentWindowIDSet = Set(items.lazy.map(\.windowID))
-        let previousWindowIDSet = Set(previousWindowIDs)
-        guard !previousWindowIDSet.isSubset(of: currentWindowIDSet) else { return false }
+        // Use item tags (namespace:title) instead of window IDs to detect app restarts.
+        // Window IDs can be reassigned by the WindowServer even when apps are still running,
+        // which would incorrectly trigger restore and cause items to move randomly.
+        let currentTags = Set(items.map { "\($0.tag.namespace):\($0.tag.title)" })
+        let previousTagsSet = Set(previousItemTags)
+
+        // Only restore when previous item tags have disappeared (actual app restart).
+        // If same items are present (even with different window IDs), skip restore.
+        guard !previousTagsSet.isSubset(of: currentTags) else { return false }
 
         // Don't interfere with items that are currently temporarily shown.
         let activelyShownTags = Set(temporarilyShownItemContexts.map {
