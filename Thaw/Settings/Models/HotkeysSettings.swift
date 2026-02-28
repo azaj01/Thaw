@@ -93,12 +93,4 @@ final class HotkeysSettings: ObservableObject {
     func hotkey(withAction action: HotkeyAction) -> Hotkey? {
         hotkeys.first { $0.action == action }
     }
-
-    /// Resets all hotkeys to their default values.
-    func resetToDefaults() {
-        Defaults.removeObject(forKey: .hotkeys)
-        for hotkey in hotkeys {
-            hotkey.keyCombination = nil
-        }
-    }
 }

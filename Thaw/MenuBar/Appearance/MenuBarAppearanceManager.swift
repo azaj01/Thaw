@@ -14,7 +14,7 @@ import Combine
 final class MenuBarAppearanceManager: ObservableObject {
     private let diagLog = DiagLog(category: "MenuBarAppearanceManager")
     /// The current menu bar appearance configuration.
-    @Published var configuration: MenuBarAppearanceConfigurationV2 = .defaultConfiguration
+    @Published var configuration = Defaults.DefaultValue.menuBarAppearanceConfigurationV2
 
     /// The currently previewed partial configuration.
     @Published var previewConfiguration: MenuBarAppearancePartialConfiguration?
