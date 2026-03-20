@@ -715,14 +715,16 @@ extension NSScreen {
     ///
     /// Results are cached per-display and invalidated when the frontmost
     /// application changes, avoiding repeated Accessibility API round-trips.
-    func getApplicationMenuFrame() -> CGRect? {
+    /// - Parameter bypassCache: If `true`, always queries the Accessibility API
+    ///   instead of using cached values. Use this when polling for changes.
+    func getApplicationMenuFrame(bypassCache: Bool = false) -> CGRect? {
         NSScreen.invalidateApplicationMenuFrameCacheIfNeeded()
-        if let cached = NSScreen.applicationMenuFrameCache[displayID] {
+        if !bypassCache, let cached = NSScreen.applicationMenuFrameCache[displayID] {
             return cached
         }
 
         let result = computeApplicationMenuFrame()
-        if let result {
+        if !bypassCache, let result {
             NSScreen.applicationMenuFrameCache[displayID] = result
         }
         return result

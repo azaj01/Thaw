@@ -285,7 +285,7 @@ final class MenuBarOverlayPanel: NSPanel {
                     try Task.checkCancellation()
                     guard let self else { return }
                     if let latestFrame = self.owningScreen
-                        .getApplicationMenuFrame(),
+                        .getApplicationMenuFrame(bypassCache: true),
                         latestFrame != self.applicationMenuFrame
                     {
                         self.insertUpdateFlag(.applicationMenuFrame)
@@ -832,11 +832,14 @@ private final class MenuBarOverlayPanelContentView: NSView {
 
         let leadingPathBounds: CGRect = {
             guard
-                var maxX = overlayPanel?.applicationMenuFrame?.width,
-                maxX > 0
+                let applicationMenuFrame = overlayPanel?.applicationMenuFrame,
+                applicationMenuFrame.width > 0
             else {
                 return .zero
             }
+            // Calculate offset to account for menu position relative to rect origin
+            let offset = applicationMenuFrame.origin.x - rect.minX
+            var maxX = applicationMenuFrame.maxX
             if shouldInset {
                 maxX += 10
                 if info.leading.leadingEndCap == .square {
@@ -848,7 +851,7 @@ private final class MenuBarOverlayPanelContentView: NSView {
             return CGRect(
                 x: rect.minX + fullConfiguration.leftMargin,
                 y: rect.minY,
-                width: max(0, maxX - fullConfiguration.leftMargin),
+                width: max(0, maxX - offset - fullConfiguration.leftMargin),
                 height: rect.height
             )
         }()
