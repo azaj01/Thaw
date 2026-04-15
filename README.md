@@ -61,7 +61,7 @@ Thaw is currently available in the following languages:
         <td align="center">🇮🇩</td>
         <td><img src="https://geps.dev/progress/100" /></td>
         <td></td>
-        <td><b>Čeština(*)</b></td>
+        <td><b>Čeština</b></td>
         <td>Complete</td>
         <td align="center">🇨🇿</td>
         <td><img src="https://geps.dev/progress/100" /></td>
@@ -94,7 +94,7 @@ Thaw is currently available in the following languages:
         <td align="center">🇮🇹</td>
         <td><img src="https://geps.dev/progress/100" /></td>
         <td></td>
-        <td><b>日本語(*)</b></td>
+        <td><b>日本語</b></td>
         <td>Complete</td>
         <td align="center">🇯🇵</td>
         <td><img src="https://geps.dev/progress/100" /></td>
@@ -116,13 +116,13 @@ Thaw is currently available in the following languages:
         <td align="center">🇳🇱/🇧🇪</td>
         <td><img src="https://geps.dev/progress/100" /></td>
         <td></td>
-        <td><b>Português (Brasil)(*)</b></td>
+        <td><b>Português (Brasil)</b></td>
         <td>Complete</td>
         <td align="center">🇧🇷</td>
         <td><img src="https://geps.dev/progress/100" /></td>
     </tr>
     <tr>
-        <td><b>Русский(*)</b></td>
+        <td><b>Русский</b></td>
         <td>Complete</td>
         <td align="center">🇷🇺</td>
         <td><img src="https://geps.dev/progress/100" /></td>
@@ -149,7 +149,7 @@ Thaw is currently available in the following languages:
         <td align="center">🇵🇱</td>
         <td><img src="https://geps.dev/progress/100" /></td>
         <td></td>
-        <td><b>Türkçe(*)</b></td>
+        <td><b>Türkçe</b></td>
         <td>Complete</td>
         <td align="center">🇹🇷</td>
         <td><img src="https://geps.dev/progress/100" /></td>
@@ -176,7 +176,7 @@ _Note: languages marked with (\*) are currently only available in the developmen
 - [x] Display hidden menu bar items in a separate bar (e.g. for MacBooks with the notch)
 - [x] Search menu bar items
 - [x] Menu bar item spacing (BETA)
-- [ ] Profiles for menu bar layout
+- [x] Profiles for menu bar layout
 - [ ] Individual spacer items
 - [ ] Menu bar item groups
 - [ ] Show menu bar items when trigger conditions are met
@@ -187,9 +187,9 @@ _Note: languages marked with (\*) are currently only available in the developmen
 - [x] Menu bar shadow
 - [x] Menu bar border
 - [x] Custom menu bar shapes (rounded and/or split)
-- [ ] Remove background behind menu bar
+- [x] Remove background behind menu bar (macOS setting)
 - [ ] Rounded screen corners
-- [ ] Different settings for light/dark mode
+- [x] Different settings for light/dark mode
 
 ### Hotkeys
 
