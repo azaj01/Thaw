@@ -11,10 +11,17 @@ import Cocoa
 /// A draggable badge that controls where newly detected items will be placed.
 final class LayoutBarNewItemsBadgeView: LayoutBarArrangedView {
     private enum Metrics {
-        static let size = CGSize(width: 84, height: 24)
+        static let height: CGFloat = 24
         static let cornerRadius: CGFloat = 12
-        static let horizontalInset: CGFloat = 10
+        static let horizontalPadding: CGFloat = 10
         static let borderWidth: CGFloat = 1
+    }
+
+    private static var textAttributes: [NSAttributedString.Key: Any] {
+        [
+            .font: NSFont.systemFont(ofSize: 11, weight: .semibold),
+            .foregroundColor: NSColor.labelColor,
+        ]
     }
 
     override var kind: Kind {
@@ -22,7 +29,14 @@ final class LayoutBarNewItemsBadgeView: LayoutBarArrangedView {
     }
 
     init() {
-        super.init(frame: CGRect(origin: .zero, size: Metrics.size))
+        let title = NSAttributedString(
+            string: String(localized: "New Items"),
+            attributes: Self.textAttributes
+        )
+        let textWidth = ceil(title.size().width)
+        let badgeWidth = textWidth + (Metrics.horizontalPadding * 2)
+        let size = CGSize(width: badgeWidth, height: Metrics.height)
+        super.init(frame: CGRect(origin: .zero, size: size))
         unregisterDraggedTypes()
     }
 
@@ -48,18 +62,16 @@ final class LayoutBarNewItemsBadgeView: LayoutBarArrangedView {
         pillPath.lineWidth = Metrics.borderWidth
         pillPath.stroke()
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 11, weight: .semibold),
-            .foregroundColor: NSColor.labelColor,
-        ]
-        let title = NSAttributedString(string: String(localized: "New Items"), attributes: attributes)
-        let titleRect = CGRect(
-            x: bounds.minX + Metrics.horizontalInset,
-            y: bounds.midY - 7,
-            width: bounds.width - (Metrics.horizontalInset * 2),
-            height: 14
+        let title = NSAttributedString(
+            string: String(localized: "New Items"),
+            attributes: Self.textAttributes
         )
-        title.draw(in: titleRect)
+        let titleSize = title.size()
+        let titleOrigin = CGPoint(
+            x: bounds.midX - (titleSize.width / 2),
+            y: bounds.midY - (titleSize.height / 2)
+        )
+        title.draw(at: titleOrigin)
     }
 
     override func mouseDragged(with event: NSEvent) {
