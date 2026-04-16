@@ -378,6 +378,14 @@ final class HIDEventManager: ObservableObject {
 
         guard isEnabled else { return }
 
+        // Check all NSEvent-based monitors and restart any that stopped running.
+        // This handles cases where macOS silently invalidates monitors due to
+        // accessibility permission changes, system resource pressure, or other
+        // unexpected conditions.
+        for monitor in allMonitors {
+            monitor.ensureRunning()
+        }
+
         // Check the mouseMovedTap if it should be active.
         if let appState, needsMouseMovedTap(appState: appState) {
             if mouseMovedTap.ensureValid() {
@@ -1106,6 +1114,9 @@ extension HIDEventManager {
 private protocol EventMonitorProtocol {
     func start()
     func stop()
+    /// Checks validity and restarts if needed. Returns `true` if running after call.
+    @discardableResult
+    func ensureRunning() -> Bool
 }
 
 extension EventMonitor: EventMonitorProtocol {}
@@ -1117,5 +1128,16 @@ extension EventTap: EventMonitorProtocol {
 
     fileprivate func stop() {
         disable()
+    }
+
+    @discardableResult
+    fileprivate func ensureRunning() -> Bool {
+        if ensureValid() {
+            if !isEnabled {
+                enable()
+            }
+            return true
+        }
+        return false
     }
 }
