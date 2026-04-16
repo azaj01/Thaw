@@ -44,7 +44,22 @@ final class LayoutBarContainer: NSView {
 
     /// A Boolean value that indicates whether the container can
     /// set its arranged views.
-    var canSetArrangedViews = true
+    ///
+    /// When this transitions from `false` to `true`, the container
+    /// automatically refreshes its arranged views from the current
+    /// item cache. This ensures updates that arrived while the flag
+    /// was `false` are not lost.
+    var canSetArrangedViews = true {
+        didSet {
+            guard canSetArrangedViews, !oldValue, let appState else {
+                return
+            }
+            // Flag transitioned from false to true. Refresh from
+            // current cache to pick up any updates that were missed.
+            let items = appState.itemManager.itemCache.managedItems(for: section)
+            setArrangedViews(items: items)
+        }
+    }
 
     /// The contaner's arranged views.
     ///
