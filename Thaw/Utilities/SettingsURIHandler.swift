@@ -158,6 +158,7 @@ enum SettingsURIHandler {
         whitelist.append(bundleId)
         Defaults.set(whitelist, forKey: .settingsURIWhitelist)
         diagLog.info("Settings URI: Added \(bundleId) to whitelist")
+        NotificationCenter.default.post(name: .settingsURIWhitelistDidChange, object: nil)
     }
 
     /// Removes a bundle ID from the whitelist.
@@ -166,6 +167,7 @@ enum SettingsURIHandler {
         whitelist.removeAll { $0 == bundleId }
         Defaults.set(whitelist, forKey: .settingsURIWhitelist)
         diagLog.info("Settings URI: Removed \(bundleId) from whitelist")
+        NotificationCenter.default.post(name: .settingsURIWhitelistDidChange, object: nil)
     }
 
     /// Gets the display name for a bundle ID.
@@ -995,4 +997,7 @@ extension Notification.Name {
 
     /// Posted when a get request response is broadcast via distributed notification.
     static let settingsURIGetResponse = Notification.Name("com.stonerl.Thaw.settingsURIGetResponse")
+
+    /// Posted when the Settings URI whitelist changes.
+    static let settingsURIWhitelistDidChange = Notification.Name("com.stonerl.Thaw.settingsURIWhitelistDidChange")
 }

@@ -28,10 +28,13 @@ final class AutomationSettings: ObservableObject {
 
     /// Represents a whitelisted application.
     struct WhitelistedApp: Identifiable, Equatable {
-        let id = UUID()
         let bundleId: String
         let appName: String?
         let icon: NSImage?
+
+        var id: String {
+            bundleId
+        }
 
         var displayName: String {
             appName ?? bundleId
@@ -52,9 +55,10 @@ final class AutomationSettings: ObservableObject {
         self.isSettingsURIEnabled = Defaults.bool(forKey: .settingsURIEnabled)
         refreshWhitelist()
 
-        // Listen for whitelist changes from other sources
+        // Listen for whitelist changes from SettingsURIHandler
         NotificationCenter.default
-            .publisher(for: UserDefaults.didChangeNotification)
+            .publisher(for: .settingsURIWhitelistDidChange)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.refreshWhitelist()
             }

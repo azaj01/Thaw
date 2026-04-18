@@ -93,6 +93,7 @@ final class AdvancedSettings: ObservableObject {
         var c = Set<AnyCancellable>()
 
         $enableAlwaysHiddenSection
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { enable in
                 Defaults.set(enable, forKey: .enableAlwaysHiddenSection)
@@ -100,6 +101,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $useOptionClickToShowAlwaysHiddenSection
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { enable in
                 Defaults.set(enable, forKey: .useOptionClickToShowAlwaysHiddenSection)
@@ -107,6 +109,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $showAllSectionsOnUserDrag
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { showAll in
                 Defaults.set(showAll, forKey: .showAllSectionsOnUserDrag)
@@ -114,6 +117,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $sectionDividerStyle
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { style in
                 Defaults.set(style.rawValue, forKey: .sectionDividerStyle)
@@ -121,6 +125,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $hideApplicationMenus
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { shouldHide in
                 Defaults.set(shouldHide, forKey: .hideApplicationMenus)
@@ -128,6 +133,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $enableSecondaryContextMenu
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { enable in
                 Defaults.set(enable, forKey: .enableSecondaryContextMenu)
@@ -135,6 +141,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $showOnHoverDelay
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { delay in
                 Defaults.set(delay, forKey: .showOnHoverDelay)
@@ -142,6 +149,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $tooltipDelay
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { delay in
                 Defaults.set(delay, forKey: .tooltipDelay)
@@ -149,6 +157,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $showMenuBarTooltips
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { show in
                 Defaults.set(show, forKey: .showMenuBarTooltips)
@@ -156,6 +165,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $iconRefreshInterval
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { interval in
                 Defaults.set(interval, forKey: .iconRefreshInterval)
@@ -163,6 +173,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $enableDiagnosticLogging
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { enable in
                 Defaults.set(enable, forKey: .enableDiagnosticLogging)
@@ -171,6 +182,7 @@ final class AdvancedSettings: ObservableObject {
             .store(in: &c)
 
         $useLCSSortingOnNotchedDisplays
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { enable in
                 Defaults.set(enable, forKey: .useLCSSortingOnNotchedDisplays)
@@ -212,7 +224,6 @@ final class AdvancedSettings: ObservableObject {
                 showMenuBarTooltips = boolValue
             case "enableDiagnosticLogging":
                 enableDiagnosticLogging = boolValue
-                DiagnosticLogger.shared.isEnabled = boolValue
             case "useLCSSortingOnNotchedDisplays":
                 useLCSSortingOnNotchedDisplays = boolValue
             default:

@@ -146,6 +146,7 @@ final class GeneralSettings: ObservableObject {
         var c = Set<AnyCancellable>()
 
         $showIceIcon
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { showIceIcon in
                 Defaults.set(showIceIcon, forKey: .showIceIcon)
@@ -153,6 +154,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $iceIcon
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] iceIcon in
                 guard let self else {
@@ -171,6 +173,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $customIceIconIsTemplate
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { isTemplate in
                 Defaults.set(isTemplate, forKey: .customIceIconIsTemplate)
@@ -178,6 +181,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $useIceBar
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { useIceBar in
                 Defaults.set(useIceBar, forKey: .useIceBar)
@@ -185,6 +189,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $useIceBarOnlyOnNotchedDisplay
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { useIceBarOnlyOnNotchedDisplay in
                 Defaults.set(useIceBarOnlyOnNotchedDisplay, forKey: .useIceBarOnlyOnNotchedDisplay)
@@ -192,6 +197,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $iceBarLocation
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { location in
                 Defaults.set(location.rawValue, forKey: .iceBarLocation)
@@ -199,6 +205,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $iceBarLocationOnHotkey
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { iceBarLocationOnHotkey in
                 Defaults.set(iceBarLocationOnHotkey, forKey: .iceBarLocationOnHotkey)
@@ -206,6 +213,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $showOnClick
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { showOnClick in
                 Defaults.set(showOnClick, forKey: .showOnClick)
@@ -213,6 +221,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $showOnDoubleClick
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { showOnDoubleClick in
                 Defaults.set(showOnDoubleClick, forKey: .showOnDoubleClick)
@@ -220,6 +229,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $showOnHover
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { showOnHover in
                 Defaults.set(showOnHover, forKey: .showOnHover)
@@ -227,6 +237,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $showOnScroll
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { showOnScroll in
                 Defaults.set(showOnScroll, forKey: .showOnScroll)
@@ -234,6 +245,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $itemSpacingOffset
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak appState] offset in
                 Defaults.set(offset, forKey: .itemSpacingOffset)
@@ -242,6 +254,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $autoRehide
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { autoRehide in
                 Defaults.set(autoRehide, forKey: .autoRehide)
@@ -249,6 +262,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $rehideStrategy
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { strategy in
                 Defaults.set(strategy.rawValue, forKey: .rehideStrategy)
@@ -256,6 +270,7 @@ final class GeneralSettings: ObservableObject {
             .store(in: &c)
 
         $rehideInterval
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { interval in
                 Defaults.set(interval, forKey: .rehideInterval)
@@ -285,28 +300,28 @@ final class GeneralSettings: ObservableObject {
             diagLog.debug("GeneralSettings: Received external change for \(key) = \(boolValue)")
 
             switch key {
-            case "showIceIcon":
+            case "showIceIcon" where showIceIcon != boolValue:
                 showIceIcon = boolValue
-            case "customIceIconIsTemplate":
+            case "customIceIconIsTemplate" where customIceIconIsTemplate != boolValue:
                 customIceIconIsTemplate = boolValue
-            case "useIceBar":
+            case "useIceBar" where useIceBar != boolValue:
                 useIceBar = boolValue
-            case "useIceBarOnlyOnNotchedDisplay":
+            case "useIceBarOnlyOnNotchedDisplay" where useIceBarOnlyOnNotchedDisplay != boolValue:
                 useIceBarOnlyOnNotchedDisplay = boolValue
-            case "iceBarLocationOnHotkey":
+            case "iceBarLocationOnHotkey" where iceBarLocationOnHotkey != boolValue:
                 iceBarLocationOnHotkey = boolValue
-            case "showOnClick":
+            case "showOnClick" where showOnClick != boolValue:
                 showOnClick = boolValue
-            case "showOnDoubleClick":
+            case "showOnDoubleClick" where showOnDoubleClick != boolValue:
                 showOnDoubleClick = boolValue
-            case "showOnHover":
+            case "showOnHover" where showOnHover != boolValue:
                 showOnHover = boolValue
-            case "showOnScroll":
+            case "showOnScroll" where showOnScroll != boolValue:
                 showOnScroll = boolValue
-            case "autoRehide":
+            case "autoRehide" where autoRehide != boolValue:
                 autoRehide = boolValue
             default:
-                // Key not handled by GeneralSettings
+                // Key not handled by GeneralSettings or value unchanged
                 break
             }
         }
@@ -315,7 +330,7 @@ final class GeneralSettings: ObservableObject {
         if let doubleValue = notification.userInfo?["doubleValue"] as? Double {
             diagLog.debug("GeneralSettings: Received external change for \(key) = \(doubleValue)")
 
-            if key == "rehideInterval" {
+            if key == "rehideInterval", rehideInterval != doubleValue {
                 rehideInterval = doubleValue
             }
         }
@@ -325,7 +340,8 @@ final class GeneralSettings: ObservableObject {
             diagLog.debug("GeneralSettings: Received external change for \(key) = \(rawEnumValue)")
 
             if key == "rehideStrategy",
-               let strategy = RehideStrategy(rawValue: rawEnumValue)
+               let strategy = RehideStrategy(rawValue: rawEnumValue),
+               rehideStrategy != strategy
             {
                 rehideStrategy = strategy
             }
