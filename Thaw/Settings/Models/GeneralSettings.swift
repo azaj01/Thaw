@@ -315,12 +315,8 @@ final class GeneralSettings: ObservableObject {
         if let doubleValue = notification.userInfo?["doubleValue"] as? Double {
             diagLog.debug("GeneralSettings: Received external change for \(key) = \(doubleValue)")
 
-            switch key {
-            case "rehideInterval":
+            if key == "rehideInterval" {
                 rehideInterval = doubleValue
-            default:
-                // Key not handled by GeneralSettings
-                break
             }
         }
 
@@ -328,14 +324,10 @@ final class GeneralSettings: ObservableObject {
         if let rawEnumValue = notification.userInfo?["rawEnumValue"] as? Int {
             diagLog.debug("GeneralSettings: Received external change for \(key) = \(rawEnumValue)")
 
-            switch key {
-            case "rehideStrategy":
-                if let strategy = RehideStrategy(rawValue: rawEnumValue) {
-                    rehideStrategy = strategy
-                }
-            default:
-                // Key not handled by GeneralSettings
-                break
+            if key == "rehideStrategy",
+               let strategy = RehideStrategy(rawValue: rawEnumValue)
+            {
+                rehideStrategy = strategy
             }
         }
     }

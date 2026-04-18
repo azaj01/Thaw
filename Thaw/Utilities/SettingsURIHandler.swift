@@ -174,10 +174,10 @@ enum SettingsURIHandler {
         }
 
         // Try to get from bundle path
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
-            if let bundle = Bundle(url: url) {
-                return bundle.object(forInfoDictionaryKey: kCFBundleNameKey as String) as? String
-            }
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId),
+           let bundle = Bundle(url: url)
+        {
+            return bundle.object(forInfoDictionaryKey: kCFBundleNameKey as String) as? String
         }
 
         return nil
@@ -298,8 +298,7 @@ enum SettingsURIHandler {
 
     /// Handles setting an enum value.
     private static func handleEnumSet(key: String, value: String) -> Bool {
-        switch key {
-        case "rehideStrategy":
+        if key == "rehideStrategy" {
             guard let strategy = RehideStrategy.fromString(value) else {
                 diagLog.warning("Settings URI: Invalid rehideStrategy value '\(value)'. Valid: smart (0), timed (1), focusedApp (2)")
                 return false
@@ -314,10 +313,8 @@ enum SettingsURIHandler {
             postSettingsDidChangeNotification(key: key, rawEnumValue: strategy.rawValue)
             diagLog.info("Settings URI: Set \(key) = \(strategy) (\(strategy.rawValue))")
             return true
-
-        default:
-            return false
         }
+        return false
     }
 
     /// Handles setting a per-display configuration value.
@@ -586,10 +583,10 @@ enum SettingsURIHandler {
 
         /// Extract UUID if this is a specific display scope
         var specificUUID: String? {
-            switch self {
-            case let .specificDisplay(uuid): return uuid
-            default: return nil
+            if case let .specificDisplay(uuid) = self {
+                return uuid
             }
+            return nil
         }
     }
 
@@ -618,8 +615,7 @@ enum SettingsURIHandler {
 
         // Validate response mechanism
         guard callback != nil || broadcast else {
-            let error = createErrorResponse(requestId: responseId, error: "No response mechanism specified", details: "Provide callback=<url> or broadcast=true")
-            diagLog.warning("Settings URI Get: No response mechanism provided")
+            diagLog.warning("Settings URI Get: No response mechanism provided - provide callback=<url> or broadcast=true")
             return false
         }
 

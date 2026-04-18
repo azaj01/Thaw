@@ -201,8 +201,7 @@ final class DisplaySettingsManager: ObservableObject {
 
     /// Sets iceBarLocation for displays based on scope.
     private func setIceBarLocation(_ location: IceBarLocation, scope: SettingsURIHandler.PerDisplayScope) {
-        switch scope {
-        case .allEnabledDisplays:
+        if scope == .allEnabledDisplays {
             // Update all displays that have IceBar enabled
             for screen in NSScreen.screens {
                 guard let uuid = Bridging.getDisplayUUIDString(for: screen.displayID) else { continue }
@@ -211,7 +210,7 @@ final class DisplaySettingsManager: ObservableObject {
                     updateConfiguration(forDisplayUUID: uuid) { $0.withIceBarLocation(location) }
                 }
             }
-        default:
+        } else {
             diagLog.debug("setIceBarLocation not implemented for scope \(scope)")
         }
     }
@@ -225,8 +224,7 @@ final class DisplaySettingsManager: ObservableObject {
 
     /// Sets alwaysShowHiddenItems for displays based on scope.
     private func setAlwaysShowHiddenItems(_ value: Bool, scope: SettingsURIHandler.PerDisplayScope) {
-        switch scope {
-        case .allNonIceBarDisplays:
+        if scope == .allNonIceBarDisplays {
             // Update all displays that do NOT have IceBar enabled
             for screen in NSScreen.screens {
                 guard let uuid = Bridging.getDisplayUUIDString(for: screen.displayID) else { continue }
@@ -235,15 +233,14 @@ final class DisplaySettingsManager: ObservableObject {
                     updateConfiguration(forDisplayUUID: uuid) { $0.withAlwaysShowHiddenItems(value) }
                 }
             }
-        default:
+        } else {
             diagLog.debug("setAlwaysShowHiddenItems not implemented for scope \(scope)")
         }
     }
 
     /// Toggles alwaysShowHiddenItems for displays based on scope.
     private func toggleAlwaysShowHiddenItems(scope: SettingsURIHandler.PerDisplayScope) {
-        switch scope {
-        case .allNonIceBarDisplays:
+        if scope == .allNonIceBarDisplays {
             // Toggle on all displays that do NOT have IceBar enabled
             for screen in NSScreen.screens {
                 guard let uuid = Bridging.getDisplayUUIDString(for: screen.displayID) else { continue }
@@ -252,7 +249,7 @@ final class DisplaySettingsManager: ObservableObject {
                     updateConfiguration(forDisplayUUID: uuid) { $0.withAlwaysShowHiddenItems(!$0.alwaysShowHiddenItems) }
                 }
             }
-        default:
+        } else {
             diagLog.debug("toggleAlwaysShowHiddenItems not implemented for scope \(scope)")
         }
     }
