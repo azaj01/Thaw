@@ -120,14 +120,16 @@ enum SettingsURIHandler {
         alert.messageText = String(localized: "Allow \"\(appName)\" to control Thaw settings?")
         alert.informativeText = String(
             localized: """
-            "\(appName)" (\(bundleId)) wants to modify Thaw settings via URL scheme.
+            "\(appName)" (\(bundleId)) wants to control Thaw settings via URL scheme.
 
             If allowed, this app will be able to:
-            • Toggle hidden section visibility
-            • Change auto-rehide behavior
-            • Modify other boolean settings
+            • Read current settings and configurations
+            • Toggle and change boolean settings
+            • Modify numeric values (timers, delays, intervals)
+            • Change enum settings (rehide strategy, Ice Bar location)
+            • Modify per-display configurations
 
-            This permission is permanent until manually removed in Settings > Automation.
+            This permission persists until manually removed in Settings > Automation.
             """
         )
 
@@ -198,6 +200,7 @@ enum SettingsURIHandler {
         return supportedBooleanKeys.contains(key)
             || doubleKeys.contains(key)
             || enumKeys.contains(key)
+            || perDisplayKeys.contains(key)
     }
 
     /// Parses a boolean value from string.
@@ -300,7 +303,7 @@ enum SettingsURIHandler {
     private static func handleEnumSet(key: String, value: String) -> Bool {
         if key == "rehideStrategy" {
             guard let strategy = RehideStrategy.fromString(value) else {
-                diagLog.warning("Settings URI: Invalid rehideStrategy value '\(value)'. Valid: smart (0), timed (1), focusedApp (2)")
+                diagLog.warning("Settings URI: Invalid rehideStrategy value '\(value)'. Valid: smart (0), timed (1), focusedApp/focused_app (2)")
                 return false
             }
 
@@ -424,6 +427,12 @@ enum SettingsURIHandler {
         // Check if this is a per-display setting
         if perDisplayKeys.contains(key) {
             return handlePerDisplayToggle(key: key, displayUUID: displayUUID)
+        }
+
+        // Verify this is a boolean setting (not double or enum)
+        guard supportedBooleanKeys.contains(key) else {
+            diagLog.warning("Settings URI: Cannot toggle non-boolean key '\(key)'. Use set action instead.")
+            return false
         }
 
         // Get the Defaults.Key
@@ -632,9 +641,16 @@ enum SettingsURIHandler {
 
         // Send response
         if let callbackURL = callback {
+            // Full data sent via callback URL (direct to requesting app)
             return sendCallbackResponse(response: response, callback: callbackURL)
         } else if broadcast {
-            return sendBroadcastResponse(response: response)
+            // Broadcast only sends acknowledgment, not full settings data (security)
+            let ackResponse: [String: Any] = [
+                "requestId": responseId,
+                "status": "ack",
+                "message": "Use callback URL to receive full settings data",
+            ]
+            return sendBroadcastResponse(response: ackResponse)
         }
 
         return false
@@ -897,14 +913,47 @@ enum SettingsURIHandler {
         return response
     }
 
+    /// Allowed schemes for callback URLs.
+    private static let allowedCallbackSchemes: Set<String> = ["https", "http", "thaw"]
+
     /// Sends response via callback URL.
     private static func sendCallbackResponse(response: [String: Any], callback: String) -> Bool {
+        // Parse callback URL with URLComponents for safe composition
+        guard var components = URLComponents(string: callback) else {
+            diagLog.error("Settings URI Get: Invalid callback URL format: \(callback)")
+            return false
+        }
+
+        // Validate scheme against allowlist
+        guard let scheme = components.scheme?.lowercased(),
+              allowedCallbackSchemes.contains(scheme)
+        else {
+            diagLog.error("Settings URI Get: Callback URL has disallowed or missing scheme: \(callback)")
+            return false
+        }
+
+        // Reject dangerous scheme prefixes
+        if scheme.hasPrefix("x-apple-") || scheme == "file" {
+            diagLog.error("Settings URI Get: Callback URL scheme not allowed: \(scheme)")
+            return false
+        }
+
+        // Encode response as JSON
         guard let jsonData = try? JSONSerialization.data(withJSONObject: response, options: .sortedKeys),
-              let jsonString = String(data: jsonData, encoding: .utf8),
-              let encodedJSON = jsonString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let callbackURL = URL(string: "\(callback)?data=\(encodedJSON)")
+              let jsonString = String(data: jsonData, encoding: .utf8)
         else {
             diagLog.error("Settings URI Get: Failed to encode callback response")
+            return false
+        }
+
+        // Preserve existing query items and append data
+        var queryItems = components.queryItems ?? []
+        queryItems.append(URLQueryItem(name: "data", value: jsonString))
+        components.queryItems = queryItems
+
+        // Build final URL
+        guard let callbackURL = components.url else {
+            diagLog.error("Settings URI Get: Failed to compose callback URL")
             return false
         }
 

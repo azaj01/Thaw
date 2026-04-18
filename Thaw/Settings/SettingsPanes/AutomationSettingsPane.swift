@@ -74,7 +74,7 @@ struct AutomationSettingsPane: View {
 
             Spacer()
 
-            Text("\(settings.whitelistedApps.count) app\(settings.whitelistedApps.count == 1 ? "" : "s")")
+            Text("^[\(settings.whitelistedApps.count) app](inflect: true)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

@@ -159,7 +159,7 @@ Thaw supports programmatic settings manipulation via the `thaw://` URL scheme wi
 
 | Key            | Type | Valid Values | Description |
 | -------------- | ---- | ------------ | ----------- |
-| `rehideStrategy` | String/Int | `smart` (0), `timed` (1), `focusedApp` (2) | Strategy for auto-rehiding items (default: smart) |
+| `rehideStrategy` | String/Int | `smart` (0), `timed` (1), `focusedApp`/`focused_app` (2) | Strategy for auto-rehiding items (default: smart) |
 
 #### Per-Display Settings
 
