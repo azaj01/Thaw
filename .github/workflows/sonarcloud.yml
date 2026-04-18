@@ -6,13 +6,30 @@ on:
 
 env:
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
 jobs:
   sonarqube:
-    if: github.repository == 'stonerl/Thaw' # Only run on the main repository, not on forks
+    if: github.repository == 'stonerl/Thaw'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+
+      - name: Build and Test
+        run: |
+          xcodebuild test \
+            -project Thaw.xcodeproj \
+            -scheme Thaw \
+            -derivedDataPath Build/ \
+            -destination 'platform=macOS' \
+            enableCodeCoverage=YES
+
+      - name: Install xcresultparser
+        run: brew install a7ex/homebrew-formulae/xcresultparser
+
+      - name: Convert XCResult to LCOV
+        run: xcresultparser --format lcov Build/Logs/Test/*.xcresult > coverage.lcov
+
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v6
+        uses: SonarSource/sonarqube-scan-action@v4
