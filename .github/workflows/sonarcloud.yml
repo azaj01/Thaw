@@ -31,8 +31,8 @@ jobs:
       - name: Install xcresultparser
         run: brew install a7ex/homebrew-formulae/xcresultparser
 
-      - name: Convert XCResult to LCOV
-        run: xcresultparser --format lcov Build/Logs/Test/*.xcresult > coverage.lcov
+      - name: Convert XCResult to SonarQube coverage XML
+        run: xcresultparser -c -o xml Build/Logs/Test/*.xcresult > coverage.xml
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v4
