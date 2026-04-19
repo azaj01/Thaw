@@ -4,12 +4,9 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
-env:
-  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
 jobs:
   sonarqube:
-    if: github.repository == 'stonerl/Thaw'
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
@@ -36,3 +33,15 @@ jobs:
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Dummy job that passes for forks (no access to SONAR_TOKEN secret)
+  sonarqube-skip-forks:
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip SonarQube for fork PRs
+        run: |
+          echo "Skipping SonarQube analysis for PR from fork"
+          echo "Analysis will be performed after merge to main branch"
