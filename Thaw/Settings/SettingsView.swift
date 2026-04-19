@@ -8,6 +8,21 @@
 
 import SwiftUI
 
+// MARK: - Preference Key for Measuring Sidebar Item Widths
+
+private struct SidebarItemWidthPreferenceKey: PreferenceKey {
+    static let defaultValue: [SettingsNavigationIdentifier: CGFloat] = [:]
+
+    static func reduce(
+        value: inout [SettingsNavigationIdentifier: CGFloat],
+        nextValue: () -> [SettingsNavigationIdentifier: CGFloat]
+    ) {
+        value.merge(nextValue()) { _, new in new }
+    }
+}
+
+// MARK: - SettingsView
+
 struct SettingsView: View {
     let appState: AppState
     @ObservedObject var navigationState: AppNavigationState
@@ -17,7 +32,11 @@ struct SettingsView: View {
     private let sidebarPadding: CGFloat = 3
     private let sidebarItemCornerRadius: CGFloat = 12
 
-    private var sidebarWidth: CGFloat {
+    /// State to store measured text widths from sidebar items
+    @State private var measuredTextWidths: [SettingsNavigationIdentifier: CGFloat] = [:]
+
+    /// Minimum sidebar width based on macOS version and row size
+    private var minSidebarWidth: CGFloat {
         if #available(macOS 26.0, *) {
             switch sidebarRowSize {
             case .small: 200
@@ -33,6 +52,33 @@ struct SettingsView: View {
             @unknown default: 215
             }
         }
+    }
+
+    /// Icon width varies by sidebar row size
+    private var iconWidth: CGFloat {
+        switch sidebarRowSize {
+        case .small: 16
+        case .medium: 18
+        case .large: 20
+        @unknown default: 18
+        }
+    }
+
+    /// Space for icon including padding and Label internal spacing
+    private var iconSpace: CGFloat {
+        iconWidth + (sidebarPadding * 2) + 8
+    }
+
+    /// List margins (leading/trailing padding in sidebar)
+    private var listMargins: CGFloat {
+        32
+    }
+
+    /// Dynamic sidebar width calculated from measured content
+    private var dynamicSidebarWidth: CGFloat {
+        let maxTextWidth = measuredTextWidths.values.max() ?? 0
+        let calculatedWidth = maxTextWidth + iconSpace + listMargins
+        return max(calculatedWidth, minSidebarWidth)
     }
 
     private var sidebarItemHeight: CGFloat {
@@ -90,7 +136,14 @@ struct SettingsView: View {
         .toolbar {
             sidebarToolbarSpacer
         }
-        .navigationSplitViewColumnWidth(sidebarWidth)
+        .navigationSplitViewColumnWidth(
+            min: minSidebarWidth,
+            ideal: dynamicSidebarWidth,
+            max: dynamicSidebarWidth * 1.5
+        )
+        .onPreferenceChange(SidebarItemWidthPreferenceKey.self) { widths in
+            measuredTextWidths = widths
+        }
     }
 
     private func sidebarButton(for identifier: SettingsNavigationIdentifier) -> some View {
@@ -115,9 +168,21 @@ struct SettingsView: View {
         Label {
             Text(identifier.localized)
                 .font(.system(size: sidebarFontSize))
+                .foregroundStyle(sidebarTextStyle)
+                .background(
+                    GeometryReader { geometry in
+                        Color.clear
+                            .preference(
+                                key: SidebarItemWidthPreferenceKey.self,
+                                value: [identifier: geometry.size.width]
+                            )
+                    }
+                )
         } icon: {
             identifier.iconResource.view
+                .foregroundStyle(sidebarTextStyle)
                 .padding(sidebarPadding)
+                .frame(width: iconWidth, height: iconWidth)
         }
         .foregroundStyle(sidebarItemForegroundStyle(isSelected: isSelected))
         .frame(maxWidth: .infinity, minHeight: sidebarItemHeight, alignment: .leading)
