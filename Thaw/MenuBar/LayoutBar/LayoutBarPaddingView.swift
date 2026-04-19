@@ -183,7 +183,9 @@ final class LayoutBarPaddingView: NSView {
             guard !isStabilizing else { return }
             isStabilizing = true
             await MainActor.run { self.showOverlay(true) }
-            try await Task.sleep(for: .milliseconds(25))
+            // Increased delay to allow macOS to settle after operations like Reset Layout.
+            // Prevents transient errors when dragging items immediately after reset.
+            try await Task.sleep(for: .milliseconds(150))
 
             let watchdogTask = Task { [weak self, weak appState] in
                 guard let duration = self?.layoutWatchdogDuration() else { return }
