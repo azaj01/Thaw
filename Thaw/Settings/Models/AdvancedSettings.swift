@@ -44,7 +44,7 @@ final class AdvancedSettings: ObservableObject {
     /// over menu bar items in the actual menu bar (not just in the IceBar or settings).
     @Published var showMenuBarTooltips = Defaults.DefaultValue.showMenuBarTooltips
 
-    /// The interval between icon image refreshes in panels (Ice Bar, search, layout).
+    /// The interval between icon image refreshes in panels (Thaw Bar, search, layout).
     @Published var iconRefreshInterval = Defaults.DefaultValue.iconRefreshInterval
 
     /// A Boolean value that indicates whether diagnostic logging to file is enabled.

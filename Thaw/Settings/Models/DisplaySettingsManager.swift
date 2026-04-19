@@ -9,7 +9,7 @@
 import Cocoa
 import Combine
 
-/// Manages per-display Ice Bar configuration.
+/// Manages per-display Thaw Bar configuration.
 ///
 /// Configurations are keyed by display UUID string (via `Bridging.getDisplayUUIDString(for:)`).
 /// When a display has no explicit configuration, `DisplayIceBarConfiguration.defaultConfiguration`
@@ -297,12 +297,12 @@ final class DisplaySettingsManager: ObservableObject {
         return configuration(for: displayID)
     }
 
-    /// Whether the Ice Bar is enabled for the given display.
+    /// Whether the Thaw Bar is enabled for the given display.
     func useIceBar(for displayID: CGDirectDisplayID) -> Bool {
         configuration(for: displayID).useIceBar
     }
 
-    /// The Ice Bar location for the given display.
+    /// The Thaw Bar location for the given display.
     func iceBarLocation(for displayID: CGDirectDisplayID) -> IceBarLocation {
         configuration(for: displayID).iceBarLocation
     }
@@ -312,7 +312,7 @@ final class DisplaySettingsManager: ObservableObject {
         configuration(for: displayID).alwaysShowHiddenItems
     }
 
-    /// Whether any connected display has the Ice Bar enabled.
+    /// Whether any connected display has the Thaw Bar enabled.
     var isIceBarEnabledOnAnyDisplay: Bool {
         configurations.values.contains { $0.useIceBar }
     }
@@ -337,10 +337,10 @@ final class DisplaySettingsManager: ObservableObject {
         configurations = newConfigurations
     }
 
-    /// Toggles the Ice Bar for the display with the active menu bar.
+    /// Toggles the Thaw Bar for the display with the active menu bar.
     func toggleIceBarForActiveDisplay() {
         guard let uuid = Bridging.getActiveMenuBarDisplayUUID() else {
-            diagLog.warning("Cannot toggle Ice Bar — no active menu bar display UUID")
+            diagLog.warning("Cannot toggle Thaw Bar — no active menu bar display UUID")
             return
         }
         updateConfiguration(forDisplayUUID: uuid) { config in

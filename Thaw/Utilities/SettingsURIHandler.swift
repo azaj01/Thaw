@@ -206,7 +206,7 @@ enum SettingsURIHandler {
             • Read current settings and configurations
             • Toggle and change boolean settings
             • Modify numeric values (timers, delays, intervals)
-            • Change enum settings (rehide strategy, Ice Bar location)
+            • Change enum settings (rehide strategy, Thaw Bar location)
             • Modify per-display configurations
 
             This permission persists until manually removed in Settings > Automation.\(signingInfo)

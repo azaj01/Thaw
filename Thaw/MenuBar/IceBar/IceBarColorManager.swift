@@ -18,7 +18,7 @@ final class IceBarColorManager: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
 
-    /// Cancellable for the periodic refresh timer, active only while the Ice Bar is visible.
+    /// Cancellable for the periodic refresh timer, active only while the Thaw Bar is visible.
     private var periodicRefreshCancellable: AnyCancellable?
 
     func performSetup(with iceBarPanel: IceBarPanel) {

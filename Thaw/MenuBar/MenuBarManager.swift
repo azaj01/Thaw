@@ -52,7 +52,7 @@ final class MenuBarManager: ObservableObject {
     /// by a manual toggle (URL/hotkey), rather than automatically by section state.
     private var isManuallyHidingApplicationMenus = false
 
-    /// The panel that contains the Ice Bar interface.
+    /// The panel that contains the Thaw Bar interface.
     let iceBarPanel = IceBarPanel()
 
     /// The panel that contains the menu bar search interface.
@@ -218,7 +218,7 @@ final class MenuBarManager: ObservableObject {
 
                 // Don't continue if:
                 //   * The "HideApplicationMenus" setting isn't enabled.
-                //   * Using the Ice Bar.
+                //   * Using the Thaw Bar.
                 //   * The menu bar is hidden by the system.
                 //   * The active space is fullscreen.
                 //   * The settings window is visible.

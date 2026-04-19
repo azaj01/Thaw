@@ -8,12 +8,12 @@
 
 import AppKit
 
-/// Per-display configuration for the Ice Bar.
+/// Per-display configuration for the Thaw Bar.
 struct DisplayIceBarConfiguration: Codable, Equatable {
-    /// Whether the Ice Bar is enabled on this display.
+    /// Whether the Thaw Bar is enabled on this display.
     let useIceBar: Bool
 
-    /// The location where the Ice Bar appears on this display.
+    /// The location where the Thaw Bar appears on this display.
     let iceBarLocation: IceBarLocation
 
     /// Whether to always show hidden menu bar items on this display.

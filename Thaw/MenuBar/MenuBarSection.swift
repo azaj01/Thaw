@@ -64,7 +64,7 @@ final class MenuBarSection {
     /// The section's diagnostic logger.
     private nonisolated let diagLog = DiagLog(category: "MenuBarSection")
 
-    /// A Boolean value that indicates whether the Ice Bar should be used
+    /// A Boolean value that indicates whether the Thaw Bar should be used
     /// on the current active display.
     private var useIceBar: Bool {
         guard let appState else { return false }
@@ -143,7 +143,7 @@ final class MenuBarSection {
         appState?.menuBarManager
     }
 
-    /// The best screen to show the Ice Bar on.
+    /// The best screen to show the Thaw Bar on.
     ///
     /// Always returns the screen with the active menu bar so that
     /// clicking icons in the IceBar actually activates their popups.
@@ -272,19 +272,19 @@ final class MenuBarSection {
             return
         }
 
-        // Determine whether we should use the Ice Bar based on settings.
+        // Determine whether we should use the Thaw Bar based on settings.
         let shouldUseIceBarBasedOnSettings = useIceBar
 
-        // Check if items will fit inline (only relevant when not already using Ice Bar).
+        // Check if items will fit inline (only relevant when not already using Thaw Bar).
         var canShowInline = true
         if !shouldUseIceBarBasedOnSettings, let screen = screenForIceBar {
             canShowInline = canShowItemsInline(on: screen)
             if !canShowInline {
-                diagLog.info("Not enough space to show items inline, falling back to Ice Bar")
+                diagLog.info("Not enough space to show items inline, falling back to Thaw Bar")
             }
         }
 
-        // Use Ice Bar if settings say so OR if items won't fit inline.
+        // Use Thaw Bar if settings say so OR if items won't fit inline.
         if shouldUseIceBarBasedOnSettings || !canShowInline {
             // Make sure hidden and always-hidden control items are collapsed.
             // Still update the visible control item (Ice icon) state to show
@@ -320,7 +320,7 @@ final class MenuBarSection {
             return // We're done.
         }
 
-        // If we made it here, we're not using the Ice Bar.
+        // If we made it here, we're not using the Thaw Bar.
         // Make sure it's closed.
         menuBarManager.iceBarPanel.close()
 
@@ -346,7 +346,7 @@ final class MenuBarSection {
             return
         }
 
-        menuBarManager.iceBarPanel.close() // Make sure Ice Bar is always closed.
+        menuBarManager.iceBarPanel.close() // Make sure Thaw Bar is always closed.
         menuBarManager.showOnHoverAllowed = true
 
         for section in menuBarManager.sections {

@@ -501,7 +501,7 @@ extension HIDEventManager {
             }
         }
 
-        // Only continue if the click is not inside the Ice Bar, at
+        // Only continue if the click is not inside the Thaw Bar, at
         // least one section is visible, and the mouse is not inside
         // the menu bar.
         guard
@@ -1097,14 +1097,14 @@ extension HIDEventManager {
     }
 
     /// A Boolean value that indicates whether the mouse pointer is within
-    /// the bounds of the Ice Bar panel.
+    /// the bounds of the Thaw Bar panel.
     func isMouseInsideIceBar(appState: AppState) -> Bool {
         guard let mouseLocation = MouseHelpers.locationAppKit else {
             return false
         }
         let panel = appState.menuBarManager.iceBarPanel
         // Pad the frame to be more forgiving if the user accidentally
-        // moves their mouse outside of the Ice Bar.
+        // moves their mouse outside of the Thaw Bar.
         let paddedFrame = panel.frame.insetBy(dx: -15, dy: -15)
         return paddedFrame.contains(mouseLocation)
     }

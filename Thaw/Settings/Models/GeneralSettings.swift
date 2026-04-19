@@ -39,14 +39,14 @@ final class GeneralSettings: ObservableObject {
     /// in a separate bar below the menu bar.
     @Published var useIceBar = Defaults.DefaultValue.useIceBar
 
-    /// A Boolean value that indicates whether to use the Ice Bar
+    /// A Boolean value that indicates whether to use the Thaw Bar
     /// only on displays with a notch.
     @Published var useIceBarOnlyOnNotchedDisplay = Defaults.DefaultValue.useIceBarOnlyOnNotchedDisplay
 
-    /// The location where the Ice Bar appears.
+    /// The location where the Thaw Bar appears.
     @Published var iceBarLocation = Defaults.DefaultValue.iceBarLocation
 
-    /// A Boolean value that indicates whether the Ice Bar should
+    /// A Boolean value that indicates whether the Thaw Bar should
     /// appear at the mouse pointer's location when shown by a hotkey.
     @Published var iceBarLocationOnHotkey = Defaults.DefaultValue.iceBarLocationOnHotkey
 

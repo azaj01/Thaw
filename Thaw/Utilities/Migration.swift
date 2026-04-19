@@ -386,10 +386,10 @@ extension MigrationManager {
     }
 }
 
-// MARK: - Migrate Per-Display Ice Bar
+// MARK: - Migrate Per-Display Thaw Bar
 
 extension MigrationManager {
-    /// Migrates legacy global Ice Bar settings to per-display configurations.
+    /// Migrates legacy global Thaw Bar settings to per-display configurations.
     private func migratePerDisplayIceBar() -> MigrationResult {
         guard !Defaults.bool(forKey: .hasMigratedPerDisplayIceBar) else {
             return .success
@@ -400,10 +400,10 @@ extension MigrationManager {
         let iceBarLocationRaw = Defaults.integer(forKey: .iceBarLocation)
         let iceBarLocation = IceBarLocation(rawValue: iceBarLocationRaw) ?? .dynamic
 
-        // Only create per-display configs if the user had Ice Bar enabled.
+        // Only create per-display configs if the user had Thaw Bar enabled.
         guard useIceBar else {
             Defaults.set(true, forKey: .hasMigratedPerDisplayIceBar)
-            diagLog.info("Per-display Ice Bar migration: Ice Bar was disabled, nothing to migrate")
+            diagLog.info("Per-display Thaw Bar migration: Thaw Bar was disabled, nothing to migrate")
             return .success
         }
 
@@ -416,7 +416,7 @@ extension MigrationManager {
             let data = try encoder.encode(configs)
             Defaults.set(data, forKey: .displayIceBarConfigurations)
             Defaults.set(true, forKey: .hasMigratedPerDisplayIceBar)
-            diagLog.info("Per-display Ice Bar migration: migrated \(configs.count) display(s)")
+            diagLog.info("Per-display Thaw Bar migration: migrated \(configs.count) display(s)")
         } catch {
             return .failureAndLogError(.perDisplayIceBarMigrationError(error))
         }
@@ -491,7 +491,7 @@ extension MigrationManager {
             case let .appearanceConfigurationMigrationError(error):
                 "Error migrating menu bar appearance configuration: \(error)"
             case let .perDisplayIceBarMigrationError(error):
-                "Error migrating per-display Ice Bar configuration: \(error)"
+                "Error migrating per-display Thaw Bar configuration: \(error)"
             case let .combinedError(errors):
                 "The following errors occurred: \(errors)"
             }
