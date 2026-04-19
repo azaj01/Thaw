@@ -92,91 +92,79 @@ final class AdvancedSettings: ObservableObject {
     private func configureCancellables() {
         var c = Set<AnyCancellable>()
 
-        $enableAlwaysHiddenSection
-            .receive(on: DispatchQueue.main)
-            .sink { enable in
-                Defaults.set(enable, forKey: .enableAlwaysHiddenSection)
-            }
-            .store(in: &c)
+        $enableAlwaysHiddenSection.persistToDefaults(key: .enableAlwaysHiddenSection, in: &c)
+        $useOptionClickToShowAlwaysHiddenSection.persistToDefaults(key: .useOptionClickToShowAlwaysHiddenSection, in: &c)
+        $showAllSectionsOnUserDrag.persistToDefaults(key: .showAllSectionsOnUserDrag, in: &c)
+        $sectionDividerStyle.persistToDefaults(key: .sectionDividerStyle, transform: \.rawValue, in: &c)
+        $hideApplicationMenus.persistToDefaults(key: .hideApplicationMenus, in: &c)
+        $enableSecondaryContextMenu.persistToDefaults(key: .enableSecondaryContextMenu, in: &c)
+        $showOnHoverDelay.persistToDefaults(key: .showOnHoverDelay, in: &c)
+        $tooltipDelay.persistToDefaults(key: .tooltipDelay, in: &c)
+        $showMenuBarTooltips.persistToDefaults(key: .showMenuBarTooltips, in: &c)
+        $iconRefreshInterval.persistToDefaults(key: .iconRefreshInterval, in: &c)
+        $enableDiagnosticLogging.persistToDefaults(
+            key: .enableDiagnosticLogging,
+            sideEffect: { DiagnosticLogger.shared.isEnabled = $0 },
+            in: &c
+        )
+        $useLCSSortingOnNotchedDisplays.persistToDefaults(key: .useLCSSortingOnNotchedDisplays, in: &c)
 
-        $useOptionClickToShowAlwaysHiddenSection
+        // Observe external settings changes via Settings URI
+        NotificationCenter.default
+            .publisher(for: .settingsDidChangeViaURI)
             .receive(on: DispatchQueue.main)
-            .sink { enable in
-                Defaults.set(enable, forKey: .useOptionClickToShowAlwaysHiddenSection)
-            }
-            .store(in: &c)
-
-        $showAllSectionsOnUserDrag
-            .receive(on: DispatchQueue.main)
-            .sink { showAll in
-                Defaults.set(showAll, forKey: .showAllSectionsOnUserDrag)
-            }
-            .store(in: &c)
-
-        $sectionDividerStyle
-            .receive(on: DispatchQueue.main)
-            .sink { style in
-                Defaults.set(style.rawValue, forKey: .sectionDividerStyle)
-            }
-            .store(in: &c)
-
-        $hideApplicationMenus
-            .receive(on: DispatchQueue.main)
-            .sink { shouldHide in
-                Defaults.set(shouldHide, forKey: .hideApplicationMenus)
-            }
-            .store(in: &c)
-
-        $enableSecondaryContextMenu
-            .receive(on: DispatchQueue.main)
-            .sink { enable in
-                Defaults.set(enable, forKey: .enableSecondaryContextMenu)
-            }
-            .store(in: &c)
-
-        $showOnHoverDelay
-            .receive(on: DispatchQueue.main)
-            .sink { delay in
-                Defaults.set(delay, forKey: .showOnHoverDelay)
-            }
-            .store(in: &c)
-
-        $tooltipDelay
-            .receive(on: DispatchQueue.main)
-            .sink { delay in
-                Defaults.set(delay, forKey: .tooltipDelay)
-            }
-            .store(in: &c)
-
-        $showMenuBarTooltips
-            .receive(on: DispatchQueue.main)
-            .sink { show in
-                Defaults.set(show, forKey: .showMenuBarTooltips)
-            }
-            .store(in: &c)
-
-        $iconRefreshInterval
-            .receive(on: DispatchQueue.main)
-            .sink { interval in
-                Defaults.set(interval, forKey: .iconRefreshInterval)
-            }
-            .store(in: &c)
-
-        $enableDiagnosticLogging
-            .receive(on: DispatchQueue.main)
-            .sink { enable in
-                Defaults.set(enable, forKey: .enableDiagnosticLogging)
-                DiagnosticLogger.shared.isEnabled = enable
-            }
-            .store(in: &c)
-
-        $useLCSSortingOnNotchedDisplays
-            .receive(on: DispatchQueue.main)
-            .sink { enable in
-                Defaults.set(enable, forKey: .useLCSSortingOnNotchedDisplays)
+            .sink { [weak self] notification in
+                self?.handleExternalSettingsChange(notification)
             }
             .store(in: &c)
 
         cancellables = c
+    }
+
+    /// Handles settings changed externally via Settings URI scheme.
+    private func handleExternalSettingsChange(_ notification: Notification) {
+        guard let key = notification.userInfo?["key"] as? String else {
+            return
+        }
+
+        // Handle boolean values
+        if let boolValue = notification.userInfo?["value"] as? Bool {
+            switch key {
+            case "enableAlwaysHiddenSection":
+                enableAlwaysHiddenSection = boolValue
+            case "useOptionClickToShowAlwaysHiddenSection":
+                useOptionClickToShowAlwaysHiddenSection = boolValue
+            case "showAllSectionsOnUserDrag":
+                showAllSectionsOnUserDrag = boolValue
+            case "hideApplicationMenus":
+                hideApplicationMenus = boolValue
+            case "enableSecondaryContextMenu":
+                enableSecondaryContextMenu = boolValue
+            case "showMenuBarTooltips":
+                showMenuBarTooltips = boolValue
+            case "enableDiagnosticLogging":
+                enableDiagnosticLogging = boolValue
+            case "useLCSSortingOnNotchedDisplays":
+                useLCSSortingOnNotchedDisplays = boolValue
+            default:
+                // Key not handled by AdvancedSettings
+                break
+            }
+        }
+
+        // Handle double values
+        if let doubleValue = notification.userInfo?["doubleValue"] as? Double {
+            switch key {
+            case "showOnHoverDelay":
+                showOnHoverDelay = doubleValue
+            case "tooltipDelay":
+                tooltipDelay = doubleValue
+            case "iconRefreshInterval":
+                iconRefreshInterval = doubleValue
+            default:
+                // Key not handled by AdvancedSettings
+                break
+            }
+        }
     }
 }
