@@ -89,7 +89,7 @@ jobs:
       - name: Process coverage & Scan
         run: |
           brew install a7ex/homebrew-formulae/xcresultparser
-          NEWEST_BUNDLE=$(ls -t Build/Logs/Test/*.xcresult 2>/dev/null | head -n1)
+          NEWEST_BUNDLE=$(ls -td Build/Logs/Test/*.xcresult 2>/dev/null | head -n1)
           xcresultparser -c -o xml "$NEWEST_BUNDLE" > coverage.xml
 
       - name: SonarQube Scan
