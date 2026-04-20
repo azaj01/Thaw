@@ -74,7 +74,7 @@ struct AutomationSettingsPane: View {
 
             Spacer()
 
-            Text("^[\(settings.whitelistedApps.count) app](inflect: true)")
+            Text(String(format: NSLocalizedString("whitelisted_apps_count", comment: "Shows the number of whitelisted apps"), settings.whitelistedApps.count))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
